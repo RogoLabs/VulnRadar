@@ -14,6 +14,10 @@ on:
   schedule:
     - cron: "20 * * * *" # Backup: run after ETL job in case workflow_run fails
 
+concurrency:
+  group: vulnradar-notify
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
@@ -82,7 +86,7 @@ jobs:
             echo "No state changes to commit"
           else
             git commit -m "Update notification state [skip ci]"
-            git pull --rebase
+            git pull --rebase -X theirs
             git push
             echo "State file committed"
           fi
