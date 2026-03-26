@@ -2,19 +2,14 @@
 #
 # VulnRadar Demo Reset Script
 # ===========================
-# This script prepares vulnradar-demo for a fresh demo run.
-# It syncs the latest code, resets state, and ensures a rich watchlist.
+# Wipes the local demo repo and rebuilds it from a fresh shallow clone
+# of VulnRadar. No history is carried over — just the latest code,
+# a demo watchlist, and a single clean commit.
 #
 # Usage:
 #   ./scripts/reset_demo.sh [path_to_vulnradar_demo]
 #
-# Default: ~/Documents/Github/VulnRadar-Demo/
-#
-# What it does:
-# 1. Syncs code from VulnRadar (excluding data and state)
-# 2. Resets data/state.json so "first run" triggers
-# 3. Installs a rich demo watchlist for better presentation
-# 4. Commits and optionally pushes changes
+# Default: ~/Documents/Github/RogoLabs/VulnRadar-Demo
 #
 
 set -e
@@ -26,86 +21,59 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default demo repo path
-DEMO_REPO="${1:-$HOME/Documents/Github/VulnRadar-Demo}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MAIN_REPO="$(dirname "$SCRIPT_DIR")"
+# Defaults
+DEMO_REPO="${1:-$HOME/Documents/Github/RogoLabs/VulnRadar-Demo}"
+DEMO_REMOTE="https://github.com/RogoLabs/VulnRadar-Demo.git"
+UPSTREAM_REMOTE="https://github.com/RogoLabs/VulnRadar.git"
 
 echo -e "${BLUE}🛡️ VulnRadar Demo Reset Script${NC}"
 echo "================================"
 echo ""
 
-# Check if demo repo exists
-if [ ! -d "$DEMO_REPO" ]; then
-    echo -e "${RED}❌ Demo repo not found: $DEMO_REPO${NC}"
-    echo ""
-    echo "To set up a demo repo:"
-    echo "  1. Fork VulnRadar to a new repo (e.g., vulnradar-demo)"
-    echo "  2. Clone it: git clone https://github.com/YOU/vulnradar-demo ../vulnradar-demo"
-    echo "  3. Run this script again"
-    exit 1
+# ── Step 1: Detect existing demo remote (before we wipe it) ─────────
+if [ -d "$DEMO_REPO/.git" ]; then
+    DETECTED_REMOTE=$(git -C "$DEMO_REPO" remote get-url origin 2>/dev/null || true)
+    if [ -n "$DETECTED_REMOTE" ]; then
+        DEMO_REMOTE="$DETECTED_REMOTE"
+    fi
+    echo -e "${YELLOW}🗑️  Step 1: Removing old demo repo...${NC}"
+    rm -rf "$DEMO_REPO"
+    echo -e "  ${GREEN}→ Removed $DEMO_REPO${NC}"
+else
+    echo -e "${YELLOW}📁 Step 1: No existing demo repo at $DEMO_REPO${NC}"
 fi
 
-# Check if it's a git repo
-if [ ! -d "$DEMO_REPO/.git" ]; then
-    echo -e "${RED}❌ Not a git repository: $DEMO_REPO${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ Found demo repo: $DEMO_REPO${NC}"
 echo ""
 
-# Change to demo repo
+# ── Step 2: Shallow clone upstream VulnRadar (depth 1 = no history) ──
+echo -e "${YELLOW}📦 Step 2: Fresh shallow clone from VulnRadar...${NC}"
+git clone --depth 1 "$UPSTREAM_REMOTE" "$DEMO_REPO"
+echo -e "  ${GREEN}→ Cloned latest VulnRadar (single commit, no history)${NC}"
+
 cd "$DEMO_REPO"
 
-# Step 1: Sync git history from upstream (RogoLabs/VulnRadar)
-echo -e "${YELLOW}📦 Step 1: Syncing from upstream VulnRadar...${NC}"
+echo ""
 
-# Add upstream remote if it doesn't exist
-if ! git remote get-url upstream &>/dev/null; then
-    echo "  → Adding upstream remote..."
-    git remote add upstream https://github.com/RogoLabs/VulnRadar.git
-else
-    echo "  → Upstream remote already exists"
-fi
-
-# Fetch upstream
-echo "  → Fetching upstream changes..."
-git fetch upstream
-
-# Reset to upstream/main (this syncs all files AND history)
-echo "  → Resetting to upstream/main..."
-git reset --hard upstream/main
-echo -e "  ${GREEN}→ Synced with upstream!${NC}"
+# ── Step 3: Swap origin to point at the demo repo ───────────────────
+echo -e "${YELLOW}🔗 Step 3: Setting origin to demo remote...${NC}"
+git remote set-url origin "$DEMO_REMOTE"
+echo "  → origin → $DEMO_REMOTE"
 
 echo ""
 
-# Step 2: Reset state for first run
-echo -e "${YELLOW}🔄 Step 2: Resetting state for first run...${NC}"
+# ── Step 4: Clean state for first run ────────────────────────────────
+echo -e "${YELLOW}🔄 Step 4: Resetting state for first run...${NC}"
 
 mkdir -p data
-
-# Remove state.json to trigger first-run behavior
-if [ -f "data/state.json" ]; then
-    rm -f "data/state.json"
-    echo "  → Removed data/state.json"
-else
-    echo "  → No state.json to remove"
-fi
-
-# Keep radar_data.json if it exists (needed for demo)
-if [ -f "data/radar_data.json" ]; then
-    echo "  → Keeping existing data/radar_data.json"
-else
-    echo "  → Note: No radar_data.json - run ETL first for demo data"
-fi
+rm -f data/state.json
+echo "  → Ensured no data/state.json (triggers first-run behavior)"
 
 echo ""
 
-# Step 3: Install rich demo watchlist
-echo -e "${YELLOW}📋 Step 3: Installing rich demo watchlist...${NC}"
+# ── Step 5: Install demo watchlist ───────────────────────────────────
+echo -e "${YELLOW}📋 Step 5: Installing demo watchlist...${NC}"
 
-cat > watchlist.yaml << 'EOF'
+cat > watchlist.yaml << 'WATCHLIST'
 # VulnRadar Demo Watchlist
 # ========================
 # A comprehensive demo watchlist with major vendors.
@@ -119,13 +87,13 @@ vendors:
   - microsoft           # Windows, Office, Azure, Exchange
   - apple               # macOS, iOS, Safari
   - google              # Chrome, Android, GCP
-  
+
   # Infrastructure & security
   - cisco               # IOS, ASA, WebEx
   - vmware              # ESXi, vCenter, Horizon
   - linux               # Linux kernel
   - apache              # httpd, Tomcat, Log4j, Kafka
-  
+
   # Security vendors (often in KEV)
   - fortinet            # FortiGate, FortiOS
   - paloaltonetworks    # PAN-OS firewalls
@@ -153,69 +121,47 @@ exclude_vendors:
 # ============================================================================
 thresholds:
   min_cvss: 7.0         # High (7.0-8.9) and Critical (9.0+) only
-EOF
+WATCHLIST
 
-echo "  → Created comprehensive demo watchlist"
-wc -l watchlist.yaml | awk '{print "  → " $1 " lines in watchlist.yaml"}'
+echo "  → Created demo watchlist (min_cvss: 7.0)"
 
 echo ""
 
-# Step 4: Stage changes
-echo -e "${YELLOW}📝 Step 4: Staging changes...${NC}"
+# ── Step 6: Commit everything as a single clean commit ───────────────
+echo -e "${YELLOW}💾 Step 6: Creating single clean commit...${NC}"
 
 git add -A
 changes=$(git status --porcelain | wc -l | tr -d ' ')
 
-if [ "$changes" -eq "0" ]; then
-    echo "  → No changes to commit"
-else
-    echo "  → $changes files staged"
-    git status --short
-fi
-
-echo ""
-
-# Step 5: Commit
-echo -e "${YELLOW}💾 Step 5: Committing changes...${NC}"
-
 if [ "$changes" -gt "0" ]; then
-    git commit -m "chore: sync from main VulnRadar and reset for demo
+    git commit --amend --no-edit -m "chore: reset demo from VulnRadar $(date +%Y-%m-%d)
 
-- Synced latest code from main repo
-- Reset state.json for first-run demo
-- Updated watchlist with comprehensive demo config"
-    echo -e "  ${GREEN}→ Changes committed${NC}"
+Fresh shallow clone with demo watchlist (min_cvss: 7.0).
+No prior history carried over."
+    echo -e "  ${GREEN}→ Single clean commit created${NC}"
 else
-    echo "  → Nothing to commit"
+    echo "  → No extra changes to commit"
 fi
 
 echo ""
 
-# Step 6: Push changes
-echo -e "${YELLOW}🚀 Step 6: Pushing changes...${NC}"
-
-# Force push since we're resetting the demo repo to a clean state
-# This overwrites any previous run data (e.g., workflow commits) on the remote
-echo "  → Force pushing to reset demo repo..."
+# ── Step 7: Force push the single commit ─────────────────────────────
+echo -e "${YELLOW}🚀 Step 7: Force pushing clean repo...${NC}"
 git push --force origin main
-echo -e "  ${GREEN}→ Changes pushed to remote${NC}"
+echo -e "  ${GREEN}→ Pushed! (single commit, no bloated history)${NC}"
 
 echo ""
 
-# Step 7: Trigger ETL workflow
-echo -e "${YELLOW}⚡ Step 7: Triggering ETL workflow...${NC}"
+# ── Step 8: Trigger ETL workflow ─────────────────────────────────────
+echo -e "${YELLOW}⚡ Step 8: Triggering ETL workflow...${NC}"
 
-# Check if gh CLI is available
 if ! command -v gh &> /dev/null; then
     echo -e "  ${YELLOW}⚠️ GitHub CLI (gh) not installed. Skipping workflow trigger.${NC}"
     echo "  Install with: brew install gh"
     echo "  Then run manually: gh workflow run update.yml"
 else
-    # Get repo name from git remote
-    REPO_URL=$(git remote get-url origin)
-    # Extract owner/repo from URL (handles both HTTPS and SSH)
-    REPO_NAME=$(echo "$REPO_URL" | sed -E 's/.*[:/]([^/]+\/[^/]+)(\.git)?$/\1/' | sed 's/\.git$//')
-    
+    REPO_NAME=$(echo "$DEMO_REMOTE" | sed -E 's/.*[:/]([^/]+\/[^/]+)(\.git)?$/\1/' | sed 's/\.git$//')
+
     echo "  → Triggering update.yml workflow on $REPO_NAME..."
     if gh workflow run update.yml --repo "$REPO_NAME"; then
         echo -e "  ${GREEN}→ ETL workflow triggered!${NC}"
@@ -231,7 +177,7 @@ fi
 
 echo ""
 
-# Step 8: Summary
+# ── Summary ──────────────────────────────────────────────────────────
 echo -e "${BLUE}════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}✅ Demo repo ready and workflow triggered!${NC}"
 echo ""
