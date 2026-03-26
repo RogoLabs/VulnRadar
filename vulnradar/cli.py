@@ -525,15 +525,9 @@ def main_notify() -> int:
     )
 
     if is_first_run and len(candidates) > 5:
-        # KEV + watchlist items get individual alerts even on first run
-        kev_watchlist = [c for c in candidates if c.get("active_threat") and c.get("in_watchlist")]
-        baseline_only = [c for c in candidates if not (c.get("active_threat") and c.get("in_watchlist"))]
-        if baseline_only:
-            print(f"\n🚀 First run detected! Creating baseline summary for {len(baseline_only)} items.")
-            gh.send_baseline(items, baseline_only, repo, vendors=wl.vendors, products=wl.products)
-        if kev_watchlist:
-            print(f"\n⚠️  Sending {len(kev_watchlist)} individual alerts for KEV + watchlist items.")
-            created, escalated = gh.send_all(kev_watchlist, changes_by_cve, dry_run=args.dry_run)
+        # First run: baseline summary only, no individual alerts
+        print(f"\n🚀 First run detected! Creating baseline summary for {len(candidates)} items.")
+        gh.send_baseline(items, candidates, repo, vendors=wl.vendors, products=wl.products)
     else:
         created, escalated = gh.send_all(candidates, changes_by_cve, dry_run=args.dry_run)
 
@@ -554,30 +548,9 @@ def main_notify() -> int:
         print(f"Sending {name} notifications...")
         try:
             if is_first_run and len(candidates) > 5:
-                kev_watchlist = [c for c in candidates if c.get("active_threat") and c.get("in_watchlist")]
-                baseline_only = [c for c in candidates if not (c.get("active_threat") and c.get("in_watchlist"))]
-                if baseline_only:
-                    provider.send_baseline(items, baseline_only, repo, vendors=wl.vendors, products=wl.products)
-                    print(f"Sent {name} baseline summary (first run, {len(baseline_only)} items).")
-                # KEV + watchlist items get individual alerts even on first run
-                if kev_watchlist:
-                    max_per_provider = getattr(args, f"{name}_max", 10)
-                    sent = 0
-                    for it in kev_watchlist[:max_per_provider]:
-                        cve_id = str(it.get("cve_id") or "").strip().upper()
-                        if args.dry_run:
-                            print(f"DRY RUN: would send {name} KEV alert for {cve_id}")
-                        else:
-                            rate_limit = {"discord": 0.5, "slack": 1.0, "teams": 0.5}.get(name, 0.5)
-                            time.sleep(rate_limit)
-                            item_changes = changes_by_cve.get(cve_id, (None, []))[1] if changes_by_cve else []
-                            provider.send_alert(it, item_changes)
-                            print(f"Sent {name} KEV alert for {cve_id}")
-                            if cve_id not in alerted_channels:
-                                alerted_channels[cve_id] = []
-                            alerted_channels[cve_id].append(name)
-                        sent += 1
-                    print(f"Sent {sent} {name} KEV alerts (first run).")
+                # First run: baseline summary only, no individual alerts
+                provider.send_baseline(items, candidates, repo, vendors=wl.vendors, products=wl.products)
+                print(f"Sent {name} baseline summary (first run, {len(candidates)} items).")
             elif changes_by_cve or args.force or args.no_state:
                 if args.summary_every_run:
                     provider.send_summary(items, repo, changes_by_cve if state else None)

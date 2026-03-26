@@ -64,7 +64,7 @@ jobs:
             DEMO_FLAG="--demo"
             echo "🎭 Demo mode enabled - injecting CVE-2099-DEMO"
           fi
-          python notify.py --in data/radar_data.json --max 25 --discord-max 10 --slack-max 10 --teams-max 10 $DEMO_FLAG
+          python notify.py --in data/ --max 25 --discord-max 10 --slack-max 10 --teams-max 10 $DEMO_FLAG
 
       - name: Commit state file
         run: |
