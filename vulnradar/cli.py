@@ -267,6 +267,7 @@ def main_etl(argv: Sequence[str] | None = None) -> int:
             include_kev_outside_window=bool(args.include_kev_outside_window),
             severity_threshold=wl.thresholds.severity_threshold,
             epss_threshold=wl.thresholds.epss_threshold,
+            min_cvss=wl.thresholds.min_cvss,
         )
     finally:
         shutil.rmtree(extracted, ignore_errors=True)

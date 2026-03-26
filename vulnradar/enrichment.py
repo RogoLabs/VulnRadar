@@ -132,6 +132,7 @@ def build_radar_data(
     include_kev_outside_window: bool,
     severity_threshold: float | None = None,
     epss_threshold: float | None = None,
+    min_cvss: float = 0.0,
 ) -> list[dict[str, Any]]:
     """Assemble the final radar dataset.
 
@@ -154,6 +155,8 @@ def build_radar_data(
             this score AND on the watchlist are flagged critical.
         epss_threshold: Optional EPSS floor — CVEs at or above this
             probability AND on the watchlist are flagged critical.
+        min_cvss: Minimum CVSS score to include. CVEs below this
+            threshold are excluded unless they are active threats (KEV).
 
     Returns:
         List of enriched radar item dicts.
@@ -289,6 +292,11 @@ def build_radar_data(
                 "cpe_count": nvd.get("cpe_count"),
                 "reference_count": nvd.get("reference_count"),
             }
+
+        if min_cvss > 0 and not active_threat:
+            cvss = record.get("cvss_score")
+            if cvss is None or cvss < min_cvss:
+                continue
 
         items.append(record)
 
