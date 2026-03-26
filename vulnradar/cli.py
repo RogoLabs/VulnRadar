@@ -274,12 +274,15 @@ def main_etl(argv: Sequence[str] | None = None) -> int:
 
     items = items or []
     out_path = Path(args.out)
-    write_radar_data(out_path, items)
 
     if args.vendor_split:
         index = write_vendor_split(out_path.parent, items)
         n_vendors = index["vendor_count"]
         print(f"Wrote vendor split: {n_vendors} files under {out_path.parent / 'vendors/'}")
+        # Write a slim stub so radar_data.json stays small
+        write_radar_data(out_path, [], stub_message="Data split into per-vendor files. See radar_index.json.")
+    else:
+        write_radar_data(out_path, items)
 
     state_path = Path(args.state) if args.state else None
     write_markdown_report(Path(args.report), items, state_file=state_path)

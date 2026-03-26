@@ -303,19 +303,30 @@ def build_radar_data(
     return items
 
 
-def write_radar_data(path: Path, items: list[dict[str, Any]]) -> None:
+def write_radar_data(
+    path: Path,
+    items: list[dict[str, Any]],
+    *,
+    stub_message: str | None = None,
+) -> None:
     """Write radar data to a JSON file atomically.
 
     Args:
         path: Output file path.
         items: List of radar item dicts.
+        stub_message: If set, write a slim stub instead of the full
+            dataset (used when data is split into per-vendor files).
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    payload: dict[str, Any] = {
         "generated_at": now_utc_iso(),
         "count": len(items),
-        "items": items,
     }
+    if stub_message:
+        payload["note"] = stub_message
+        payload["items"] = []
+    else:
+        payload["items"] = items
     tmp = path.with_suffix(path.suffix + ".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, sort_keys=False)

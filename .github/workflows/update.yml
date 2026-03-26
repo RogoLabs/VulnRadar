@@ -47,7 +47,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python etl.py --nvd-cache .nvd_cache
+          python etl.py --nvd-cache .nvd_cache --vendor-split
 
       - name: Update README metrics
         run: |
@@ -56,7 +56,7 @@ jobs:
       - name: Commit updated data
         run: |
           set -e
-          if [ -z "$(git status --porcelain data/radar_data.json data/radar_report.md README.md)" ]; then
+          if [ -z "$(git status --porcelain data/)" ]; then
             echo "No changes to radar outputs"
             exit 0
           fi
@@ -64,7 +64,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/radar_data.json data/radar_report.md README.md
+          git add data/radar_data.json data/radar_report.md data/radar_index.json data/vendors/ README.md
           git commit -m "chore: update radar outputs [skip ci]"
           git pull --rebase
           git push
