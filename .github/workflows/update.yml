@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: update-radar
+  cancel-in-progress: true
+
 jobs:
   update:
     # Only run on forks, not the upstream repo (fork & go design)
