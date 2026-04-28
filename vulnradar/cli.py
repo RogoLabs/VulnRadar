@@ -183,7 +183,8 @@ def main_etl(argv: Sequence[str] | None = None) -> int:
     # Search command
     parser.add_argument("--search", default=None, metavar="QUERY", help="Fuzzy search vendors/products")
     parser.add_argument(
-        "--vendor-split", action="store_true",
+        "--vendor-split",
+        action="store_true",
         help="Also write per-vendor JSON files under data/vendors/",
     )
     args = parser.parse_args(argv)
