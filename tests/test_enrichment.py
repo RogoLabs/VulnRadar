@@ -355,14 +355,16 @@ def _make_items(*vendors: str) -> list[dict[str, Any]]:
     """Create minimal radar items with matched_terms for given vendors."""
     items = []
     for i, v in enumerate(vendors):
-        items.append({
-            "cve_id": f"CVE-2024-{10000 + i}",
-            "matched_terms": [f"vendor:{v}"],
-            "is_critical": True,
-            "active_threat": False,
-            "in_watchlist": True,
-            "in_patchthis": False,
-        })
+        items.append(
+            {
+                "cve_id": f"CVE-2024-{10000 + i}",
+                "matched_terms": [f"vendor:{v}"],
+                "is_critical": True,
+                "active_threat": False,
+                "in_watchlist": True,
+                "in_patchthis": False,
+            }
+        )
     return items
 
 
@@ -409,12 +411,14 @@ class TestWriteVendorSplit:
         assert not (tmp_path / "vendors" / "microsoft.json").exists()
 
     def test_kev_only_items(self, tmp_path: Path):
-        items = [{
-            "cve_id": "CVE-2024-99999",
-            "matched_terms": [],
-            "active_threat": True,
-            "in_watchlist": False,
-        }]
+        items = [
+            {
+                "cve_id": "CVE-2024-99999",
+                "matched_terms": [],
+                "active_threat": True,
+                "in_watchlist": False,
+            }
+        ]
         index = write_vendor_split(tmp_path, items, small_vendor_threshold=1)
         assert (tmp_path / "vendors" / "_other.json").exists()
         assert index["total_count"] == 1
