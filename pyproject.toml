@@ -31,7 +31,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.15.12",
     "mypy>=1.7.0",
-    "types-requests>=2.31.0",
+    "types-requests>=2.33.0.20260503",
     "types-PyYAML>=6.0.12.20260408",
     "pre-commit>=4.6.0",
 ]
