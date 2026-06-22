@@ -1,5 +1,5 @@
 # Development dependencies for testing and linting
-pytest>=9.1.0
+pytest>=9.1.1
 pytest-cov>=4.1.0
 ruff>=0.15.17
 mypy>=1.7.0
