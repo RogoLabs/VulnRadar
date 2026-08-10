@@ -1,7 +1,7 @@
 # Development dependencies for testing and linting
 pytest>=9.1.1
 pytest-cov>=4.1.0
-ruff>=0.16.1
+ruff>=0.16.2
 mypy>=2.3.0
 types-requests>=2.33.0.20260712
 types-PyYAML>=6.0.12.20260724
