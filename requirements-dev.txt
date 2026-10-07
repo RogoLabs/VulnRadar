@@ -2,6 +2,6 @@
 pytest>=9.1.1
 pytest-cov>=4.1.0
 ruff>=0.16.10
-mypy>=2.3.1
+mypy>=2.4.0
 types-requests>=2.33.0.20260906
 types-PyYAML>=6.0.12.20260906
