@@ -32,7 +32,7 @@ dev = [
     "ruff>=0.17.3",
     "mypy>=2.4.1",
     "types-requests>=2.33.0.20261030",
-    "types-PyYAML>=6.0.12.20261030",
+    "types-PyYAML>=6.0.12.20261103",
     "pre-commit>=4.7.0",
 ]
 
